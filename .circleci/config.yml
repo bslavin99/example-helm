@@ -38,7 +38,9 @@ jobs:
 
 
 workflows:
-  testing-workflow1:
+  build-eks:
     jobs:
       - test-eks
+  build-boxos:
+    jobs:
       - test-boxos
