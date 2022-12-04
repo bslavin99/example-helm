@@ -9,38 +9,55 @@ commands: # a reusable command with parameters
     steps:
       - run:
           command: |
-            DEPLOY_DIR=<<parameters.deploy_dir>>
+            export DEPLOY_DIR=<<parameters.deploy_dir>>
             echo "Deploy_dir':' $DEPLOY_DIR"
 
-jobs:
-  test-eks:
-    docker:
-      - image: cimg/base:stable
-    environment:
-      - K8S_TARGET: eks
-      - DEPLOY_DIR: ./infrastructure-eks
-    steps:
-      - checkout
-      - run:
-          name: "test-eks"
-          command: echo "Deploy_dir':' $DEPLOY_DIR"
-  test-boxos:
-    docker:
-      - image: cimg/base:stable
-    environment:
-      - K8S_TARGET: BoxOs
-      - DEPLOY_DIR: ./infrastructure
-    steps:
-      - checkout
-      - run:
-          name: "test-boxos"
-          command: echo "Deploy_dir':' $DEPLOY_DIR"
+deploy-without-test: &deploy-without-test
+  docker:
+    - image: cimg/base:stable
+  steps:
+    - run:
+        name: "deploy"
+        command: |
+          echo "Deploy_dir $DEPLOY_DIR"
 
+jobs:
+  # BoxOs jobs
+  deploy-dev:
+    <<: *deploy-without-test
+    environment:
+      SDLC: dev
+      K8S_TARGET: boxos
+      DEPLOY_DIR: ./infrastructure
+  deploy-qastg:
+    <<: *deploy-without-test
+    environment:
+      SDLC: qastg
+      K8S_TARGET: boxos
+      DEPLOY_DIR: ./infrastructure
+
+
+  # Eks jobs
+  eks-deploy-dev:
+    <<: *deploy-without-test
+    environment:
+      SDLC: dev
+      K8S_TARGET: eks
+  eks-deploy-qastg:
+    <<: *deploy-without-test
+    environment:
+      SDLC: qastg
+      K8S_TARGET: eks
 
 workflows:
-  build-eks:
-    jobs:
-      - test-eks
+  # BoxOs workflows
   build-boxos:
     jobs:
-      - test-boxos
+      - deploy-dev
+      - deploy-qastg
+
+  # EKS workdflows
+  build-eks:
+    jobs:
+      - eks-deploy-dev
+      - eks-deploy-qastg
